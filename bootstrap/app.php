@@ -8,6 +8,16 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+function apiNotFoundMessage(?string $model): string
+{
+    return match (class_basename($model)) {
+        'Event' => 'Event not found.',
+        'Booking' => 'Booking not found.',
+        default => 'Resource not found.',
+    };
+}
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,13 +39,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            $message = match (class_basename($e->getModel())) {
-                'Event' => 'Event not found.',
-                'Booking' => 'Booking not found.',
-                default => 'Resource not found.',
-            };
+            return response()->json(['message' => apiNotFoundMessage($e->getModel())], 404);
+        });
 
-            return response()->json(['message' => $message], 404);
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $previous = $e->getPrevious();
+
+            if (! $previous instanceof ModelNotFoundException) {
+                return null;
+            }
+
+            return response()->json(['message' => apiNotFoundMessage($previous->getModel())], 404);
         });
 
         $exceptions->render(function (InsufficientSeatsException $e, Request $request) {
