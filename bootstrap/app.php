@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\InsufficientSeatsException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,4 +21,26 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (ModelNotFoundException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $message = match (class_basename($e->getModel())) {
+                'Event' => 'Event not found.',
+                'Booking' => 'Booking not found.',
+                default => 'Resource not found.',
+            };
+
+            return response()->json(['message' => $message], 404);
+        });
+
+        $exceptions->render(function (InsufficientSeatsException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json(['message' => $e->getMessage()], 409);
+        });
     })->create();
