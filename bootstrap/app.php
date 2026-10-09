@@ -1,6 +1,8 @@
 <?php
 
 use App\Exceptions\InsufficientSeatsException;
+use App\Exceptions\InvalidBookingTransitionException;
+use App\Exceptions\PaymentDeclinedException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -42,5 +44,21 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return response()->json(['message' => $e->getMessage()], 409);
+        });
+
+        $exceptions->render(function (InvalidBookingTransitionException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json(['message' => $e->getMessage()], 409);
+        });
+
+        $exceptions->render(function (PaymentDeclinedException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json(['message' => $e->getMessage()], 402);
         });
     })->create();
