@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Payments\NordBankGateway;
+use App\Payments\PaymentGateway;
 use App\Pricing\PricingCalculator;
 use App\Pricing\Rules\EarlyBirdDiscountRule;
 use App\Pricing\Rules\GroupDiscountRule;
@@ -14,6 +16,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(PaymentGateway::class, NordBankGateway::class);
+
         $this->app->tag([
             EarlyBirdDiscountRule::class,
             GroupDiscountRule::class,
